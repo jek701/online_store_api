@@ -2,9 +2,9 @@
   "name": "online_store_api",
   "version": "1.0.0",
   "description": "",
-  "main": "app.js",
+  "main": "app.ts",
   "scripts": {
-    "start": "nodemon --exec babel-node app.js"
+    "start": "nodemon --exec ts-node app.ts"
   },
   "repository": {
     "type": "git",
@@ -20,12 +20,14 @@
   "devDependencies": {
     "@babel/core": "^7.20.5",
     "@babel/node": "^7.20.5",
-    "@babel/preset-env": "^7.20.2"
+    "@babel/preset-env": "^7.20.2",
+    "typescript": "^4.7.4"
   },
   "dependencies": {
-    "dotenv": "^16.0.3",
-    "express": "^4.18.2",
-    "neo4j-driver": "^5.3.0",
+    "dotenv": "^10.0.0",
+    "express": "^4.17.1",
+    "nanoid": "^3.1.23",
+    "neo4j-driver": "^4.3.0",
     "nodemon": "^2.0.20"
   }
 }
