@@ -9,6 +9,8 @@ export interface Product {
     isAvailable: boolean
     tags: string[]
     characteristics: Characteristic[]
+    created_at: string
+    updated_at: string
 }
 
 export interface Characteristic {

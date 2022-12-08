@@ -1,5 +1,6 @@
 import { nanoid } from 'nanoid';
 import {Product} from "types/product";
+import moment from "moment";
 
 const neo4j = require('neo4j-driver');
 require('dotenv').config()
@@ -23,11 +24,11 @@ const findById = async (id) =>{
 }
 const create = async (product: Product) =>{
     const unique_id = nanoid(8)
-    await session.run(`CREATE (u:Product {_id : '${unique_id}', name: '${product.name}', manufacturer: "${product.manufacturer}", description: "${product.description}", price: "${product.price}", salePrice: "${product.salePrice}", images: "${product.images}", isAvailable: "${product.isAvailable}", tags: "${product.tags}", characteristic: "${product.characteristics}"}) return u`)
+    await session.run(`CREATE (u:Product {_id : '${unique_id}', name: '${product.name}', manufacturer: "${product.manufacturer}", description: "${product.description}", price: "${product.price}", salePrice: "${product.salePrice}", images: "${product.images}", isAvailable: "${product.isAvailable}", tags: "${product.tags}", characteristic: "${product.characteristics}", created_at: "${product.created_at}", updated_at: "${moment()}"}) return u`)
     return await findById(unique_id)
 }
 const findByIdAndUpdate = async (id, product) =>{
-    const result = await session.run(`MATCH (u:Product {_id : '${id}', name: '${product.name}', manufacturer: "${product.manufacturer}", description: "${product.description}", price: "${product.description}", salePrice: "${product.salePrice}", images: "${product.images}", isAvailable: "${product.isAvailable}", tags: "${product.tags}", characteristic: "${product.characteristics}", category: "${product.category}"}) return u`)
+    const result = await session.run(`MATCH (u:Product {_id : '${id}'}) SET u = {_id: '${product._id}', name: '${product.name}', manufacturer: "${product.manufacturer}", description: "${product.description}", price: "${product.price}", salePrice: "${product.salePrice}", images: "${product.images}", isAvailable: "${product.isAvailable}", tags: "${product.tags}", characteristic: "${product.characteristics}", created_at: "${product.created_at}", updated_at: "${moment()}"} return u`)
     return result.records[0].get('u').properties
 }
 const findByIdAndDelete = async (id) =>{
