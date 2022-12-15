@@ -21,6 +21,12 @@ order.get("/byuser/:id", async (req, res) => {
     res.json(result)
 })
 
+// get order items by order id
+order.get("/items/:id", async (req, res) => {
+    const result = await orderModel.findOrderItemsByOrderId(req.params.id)
+    res.json(result)
+})
+
 // create order
 order.post("/", async (req, res) => {
     const result = await orderModel.create(req.body)

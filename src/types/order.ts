@@ -1,6 +1,10 @@
 export interface Order {
     _id: string
-    user_id: string
+    user: {
+        _id: string
+        number: string
+        name: string
+    }
     status: string
     order_date: string
     total_price: number
@@ -21,3 +25,5 @@ export interface OrderItem {
     price: number
     created_at: string
 }
+
+export const orderStatus = "confirmed" || "waiting" || "cancelled" || "delivered" || "readyForDelivery" || "readyForPickup" || "closed"

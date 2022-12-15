@@ -15,8 +15,13 @@ const session = driver.session({database})
 
 const findAll = async () => {
     // Return all orders with all relations
-    const result = await session.run(`MATCH p = (u:Order)-[b]->(a) return p`)
-    return result.records.map(i => i.get("p").segments[0].relationship.properties)
+    const result = await session.run(`MATCH (u:Order) return u`)
+    return result.records.map(i => i.get("u").properties)
+}
+
+const findOrderItemsByOrderId = async (order_id: string) => {
+    const result = await session.run(`MATCH (u:Order {_id : '${order_id}'})-[r:ORDER_ITEM]->(i:OrderedProduct) return i`)
+    return result.records.map(i => i.get("i").properties)
 }
 
 const findAllOrdersByUserId = async (user_id: string) => {
@@ -32,10 +37,18 @@ const findByOrderId = async (order_id: string) => {
 // Change
 const create = async (category: Order) => {
     const unique_id = nanoid(8)
+    const user_id = nanoid(12)
     // Creat relation between order and order items
-    await session.run(`CREATE (u:Order {_id : "${unique_id}", user_id: "${category.user_id}", status: "waiting", order_date: "${moment()}", total_price: "${category.order_items.reduce((a, b) => a + b.price * b.quantity, 0)}", delivery_type: "${category.delivery_type}", delivery_address: "${category.delivery_address}", delivery_date: "not_delivered", payment_type: "${category.payment_type}", created_at: "${moment()}", updated_at: "${moment()}"}) return u`)
-    // Link order to user
-    await session.run(`MATCH (o: Order {_id : '${unique_id}'}), (u: User {_id : '${category.user_id}'}) CREATE (u)-[r:ORDER {when: "${moment()}", quantity: "${category.order_items.length}", product_ids: "${category.order_items.map(i => i.product_id)}"}]->(o) return r`)
+    await session.run(`CREATE (u:Order {_id : "${unique_id}", user_name: "${category.user.name}", user_number: "${category.user.number}", status: "waiting", order_date: "${moment()}", total_price: "${category.order_items.reduce((a, b) => a + b.price * b.quantity, 0)}", delivery_type: "${category.delivery_type}", delivery_address: "${category.delivery_address}", delivery_date: "not_delivered", payment_type: "${category.payment_type}", created_at: "${moment()}", updated_at: "${moment()}"}) return u`)
+    // If no user found, create a new user and create relation between order and user
+    await session.run(`MATCH (u:User {number : '${category.user.number}'}) return u limit 1`).then(async (result: any) => {
+        if (result.records.length === 0) {
+            await session.run(`CREATE (u:User {_id: "${user_id}", number : "${category.user.number}", name: "${category.user.name}", created_at: "${moment()}", updated_at: "${moment()}"}) return u`)
+            await session.run(`MATCH (u:User {_id : '${user_id}'}), (o:Order {_id : '${unique_id}'}) CREATE (u)-[r:ORDERED]->(o) return r`)
+        } else {
+            await session.run(`MATCH (u:User {number : '${category.user.number}'}), (o:Order {_id : '${unique_id}'}) CREATE (u)-[r:ORDERED]->(o) return r`)
+        }
+    })
     for (let i = 0; i < category.order_items.length; i++) {
         await session.run(`MATCH (u:Order {_id: "${unique_id}"}) CREATE (i:OrderedProduct {product_id: "${category.order_items[i].product_id}", name: "${category.order_items[i].name}", quantity: ${category.order_items[i].quantity}, price: ${category.order_items[i].price}, created_at: "${moment()}"})<-[:ORDER_ITEM {product_id: "${category.order_items[i].product_id}"}]-(u) return i`)
     }
@@ -43,7 +56,11 @@ const create = async (category: Order) => {
 }
 
 const changeStatus = async (id: string, order: Order) => {
-    await session.run(`MATCH (u:Order {_id : '${id}'}) SET u.status = "${order.status}" return u`)
+    if (order.status === "readyForDelivery" || order.status === "delivered" || order.status === "cancelled" || order.status === "waiting" || order.status === "confirmed") {
+        await session.run(`MATCH (u:Order {_id : '${id}'}) SET u.status = "${order.status}" return u`)
+    } else {
+        return "Invalid status"
+    }
     return await findByOrderId(id)
 }
 
@@ -61,6 +78,7 @@ const createRelation = async (order_id: string, user_id: string) => {
 export default {
     findAll,
     findAllOrdersByUserId,
+    findOrderItemsByOrderId,
     findByOrderId,
     create,
     createRelation,
