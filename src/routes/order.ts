@@ -34,8 +34,8 @@ order.post("/", async (req, res) => {
 })
 
 // Change status
-order.put("/status/:id", async (req, res) => {
-    const result = await orderModel.changeStatus(req.params.id, req.body)
+order.put("/status", async (req, res) => {
+    const result = await orderModel.changeStatus(req.body.status, req.body.order_id)
     res.json(result)
 })
 

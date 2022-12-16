@@ -55,13 +55,13 @@ const create = async (category: Order) => {
     return await findByOrderId(unique_id)
 }
 
-const changeStatus = async (id: string, order: Order) => {
-    if (order.status === "readyForDelivery" || order.status === "delivered" || order.status === "cancelled" || order.status === "waiting" || order.status === "confirmed") {
-        await session.run(`MATCH (u:Order {_id : '${id}'}) SET u.status = "${order.status}" return u`)
+const changeStatus = async (status: string, order_id: string) => {
+    if (status === "waiting" || "cancelled" || "delivered" || "readyForDelivery" || "readyForPickup" || "closed") {
+        await session.run(`MATCH (u:Order {_id : '${order_id}'}) SET u.status = "${status}" return u`)
     } else {
         return "Invalid status"
     }
-    return await findByOrderId(id)
+    return await findByOrderId(order_id)
 }
 
 const cancelOrder = async (id: string) => {
