@@ -60,18 +60,20 @@ const create = async (category: Order) => {
     // Creat relation between order and order items
     const session = driver.session({database})
     try {
-        await session.run(`CREATE (u:Order {_id : "${unique_id}", user_name: "${category.user.name}", user_number: "${category.user.number}", status: "waiting", order_date: "${moment()}", total_price: "${category.order_items.reduce((a, b) => a + b.price * b.quantity, 0)}", delivery_type: "${category.delivery_type}", delivery_address: "${category.delivery_address}", delivery_date: "not_delivered", payment_type: "${category.payment_type}", created_at: "${moment()}", updated_at: "${moment()}"}) return u`)
+        await session.run(`CREATE (u:Order {_id : "${unique_id}", user_name: "${category.user.name}", user_number: "${category.user.number}", status: "waiting", order_date: "${moment()}", total_price: "${category.order_items.reduce((a, b) => a + b.price * b.quantity, 0)}", delivery_type: "${category.delivery_type}", delivery_address: "${category.delivery_address.lat}, ${category.delivery_address.lng}", delivery_date: "not_delivered", payment_type: "${category.payment_type}", created_at: "${moment()}", updated_at: "${moment()}"}) return u`)
+        await session.run(`MATCH (o: Order {_id : '${unique_id}'}), (u: Orders {name : 'Orders'}) CREATE (u)-[r:HAS_ORDER]->(o) return r`)
         // If no user found, create a new user and create relation between order and user
         await session.run(`MATCH (u:User {number : '${category.user.number}'}) return u limit 1`).then(async (result: any) => {
             if (result.records.length === 0) {
                 await session.run(`CREATE (u:User {_id: "${user_id}", number : "${category.user.number}", name: "${category.user.name}", created_at: "${moment()}", updated_at: "${moment()}"}) return u`)
                 await session.run(`MATCH (u:User {_id : '${user_id}'}), (o:Order {_id : '${unique_id}'}) CREATE (u)-[r:ORDERED]->(o) return r`)
+                await session.run(`MATCH (u:User {_id : '${user_id}'}), (o:Users {name : 'Users'}) CREATE (o)-[r:HAS_USER]->(u) return r`)
             } else {
                 await session.run(`MATCH (u:User {number : '${category.user.number}'}), (o:Order {_id : '${unique_id}'}) CREATE (u)-[r:ORDERED]->(o) return r`)
             }
         })
         for (let i = 0; i < category.order_items.length; i++) {
-            await session.run(`MATCH (u:Order {_id: "${unique_id}"}) CREATE (i:OrderedProduct {product_id: "${category.order_items[i].product_id}", name: "${category.order_items[i].name}", quantity: ${category.order_items[i].quantity}, price: ${category.order_items[i].price}, created_at: "${moment()}"})<-[:ORDER_ITEM {product_id: "${category.order_items[i].product_id}"}]-(u) return i`)
+            await session.run(`MATCH (u:Order {_id: "${unique_id}"}) CREATE (i:OrderedProduct {product_id: "${category.order_items[i]._id}", name: "${category.order_items[i].name}", quantity: ${category.order_items[i].quantity}, price: ${category.order_items[i].price}, created_at: "${moment()}"})<-[:ORDER_ITEM {product_id: "${category.order_items[i].product_id}"}]-(u) return i`)
         }
         return await findByOrderId(unique_id)
     } finally {
@@ -82,9 +84,13 @@ const create = async (category: Order) => {
 const changeStatus = async (status: string, order_id: string) => {
     const session = driver.session({database})
     try {
-        if (status === "waiting" || "cancelled" || "delivered" || "readyForDelivery" || "readyForPickup" || "closed") {
-            await session.run(`MATCH (u:Order {_id : '${order_id}'}) SET u.status = "${status}" return u`)
-        } else {
+        if (status === "waiting" || "cancelled" || "readyForDelivery" || "readyForPickup") {
+            await session.run(`MATCH (u:Order {_id : '${order_id}'}) SET u.status = "${status}", u.delivery_date = "not_delivered" return u`)
+        }
+        if (status === "delivered" || "closed") {
+            await session.run(`MATCH (u:Order {_id : '${order_id}'}) SET u.status = "${status}", u.delivery_date = "${moment()}" return u`)
+        }
+        else {
             return "Invalid status"
         }
         return await findByOrderId(order_id)

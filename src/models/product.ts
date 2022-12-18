@@ -40,6 +40,7 @@ const create = async (product: Product) =>{
     try {
         const unique_id = nanoid(8)
         await session.run(`CREATE (u:Product {_id : '${unique_id}', name: '${product.name}', manufacturer: "${product.manufacturer}", description: "${product.description}", price: "${product.price}", salePrice: "${product.salePrice}", images: "${product.images}", isAvailable: ${product.isAvailable}, tags: "${product.tags}", characteristic: "${product.characteristics}", created_at: "${product.created_at}", updated_at: "${moment()}"}) return u`)
+        await session.run(`MATCH (u:Product {_id : '${unique_id}'}), (c:Products {name: "Products"}) CREATE (c)-[:HAS_PRODUCT]->(u)`)
         return await findById(unique_id)
     } catch (e) {
         console.log(e)

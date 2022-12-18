@@ -9,7 +9,10 @@ export interface Order {
     order_date: string
     total_price: number
     delivery_type: string
-    delivery_address: string
+    delivery_address: {
+        lat: number
+        lng: number
+    }
     delivery_date: string
     payment_type: string
     order_items: OrderItem[]
